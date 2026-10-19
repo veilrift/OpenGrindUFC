@@ -19,6 +19,8 @@ mod photo;
 #[cfg(test)]
 mod pin_support;
 mod plugin_rejection;
+#[cfg(target_os = "macos")]
+mod predecessor;
 #[cfg(any(target_os = "android", test))]
 mod push_poll;
 mod scroll_phase;
@@ -132,6 +134,8 @@ pub fn run() {
 	appearance::apply_environment_defaults();
 
 	api::update::enforce_home();
+	#[cfg(target_os = "macos")]
+	predecessor::adopt_data();
 
 	#[cfg(feature = "devtools")]
 	let devtools = tauri_plugin_devtools::init();
@@ -318,7 +322,12 @@ pub fn run() {
             ))]
             storage::init_file_store(app.path().app_local_data_dir()?);
 
-            app.manage(storage::init_keyring());
+            let backend = storage::init_keyring();
+            #[cfg(all(target_os = "macos", feature = "keychain"))]
+            if backend == storage::StorageBackend::Keyring {
+                storage::adopt_legacy_items();
+            }
+            app.manage(backend);
 
             let device = DeviceStorage::load_or_create();
 

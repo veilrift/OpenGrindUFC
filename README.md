@@ -105,11 +105,13 @@ The resulting IPA was inspected to confirm that the scene manifest was present.
 
 Because generated project files may be overwritten during regeneration, this configuration should be verified in future builds and made reproducible through the project's configuration or generation process.
 
-### 5. Fixed platform specific Rust compilation issues
+### 4. Fixed platform specific Rust compilation issues
 
 **Status: iOS targeted build passed.**
 
 Several changes were made to make platform-specific code compile correctly for iOS.
+
+Updated SwiftRS from 1.0.7 to 1.0.9.
 
 **Push backend**
 
@@ -137,7 +139,7 @@ using desktop-specific conditional compilation:
 
 These changes prevent desktop only functionality from being compiled into incompatible platform targets.
 
-### 7. Identified remaining compiler warnings
+### 5. Identified remaining compiler warnings
 
 The build emitted warnings relating to unused methods, unnecessary `unsafe` blocks, unused variables, and references to mutable static variables.
 
