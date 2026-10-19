@@ -466,7 +466,7 @@ export type MessageDraft = {
 	optimistic: Message;
 };
 
-export type SharedShapeMessage = Extract<
+type SharedShapeMessage = Extract<
 	Message,
 	{ type: "Text" | "Location" | "Gaymoji" | "Giphy" | "ProfilePhotoReply" }
 >;

@@ -1,7 +1,7 @@
 import { type GridMetrics, gridWindow, type GridWindow } from "./grid-window";
 import { nearestScrollableAncestor } from "./scroll";
 
-export const OVERSCAN_PX = 600;
+const OVERSCAN_PX = 600;
 
 export const NO_METRICS: GridMetrics = Object.freeze({
 	columns: 0,
@@ -70,16 +70,12 @@ export function virtualWindow({
 			overscanPx: OVERSCAN_PX,
 		}),
 	);
-	return perFieldWindow(() => view);
-}
-
-export function perFieldWindow(view: () => GridWindow): GridWindow {
-	const startIndex = $derived(view().startIndex);
-	const endIndex = $derived(view().endIndex);
-	const paddingTopPx = $derived(view().paddingTopPx);
-	const paddingBottomPx = $derived(view().paddingBottomPx);
-	const hasRowsAbove = $derived(view().hasRowsAbove);
-	const hasRowsBelow = $derived(view().hasRowsBelow);
+	const startIndex = $derived(view.startIndex);
+	const endIndex = $derived(view.endIndex);
+	const paddingTopPx = $derived(view.paddingTopPx);
+	const paddingBottomPx = $derived(view.paddingBottomPx);
+	const hasRowsAbove = $derived(view.hasRowsAbove);
+	const hasRowsBelow = $derived(view.hasRowsBelow);
 
 	return {
 		get startIndex() {

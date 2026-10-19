@@ -8,16 +8,10 @@ import {
 	meTab,
 } from "./support/app";
 import { setBlurMode } from "./support/layout-guard";
-import {
-	BOTTOM_TOASTER,
-	bottomToaster,
-	showRestingToast,
-	TOAST_GAP_PX,
-	type ToastEdge,
-	toastGap,
-} from "./support/toast";
+import { showRestingToast, type ToastEdge } from "./support/toast";
 
 const TOAST_LABEL = "Placement probe";
+const TOAST_GAP_PX = 8;
 const LOW_BAR_GAP_PX = 12;
 const WIDE_VIEWPORT = { width: 1024, height: 800 };
 const RAISED_BOTTOM_INSET_PX = 120;
@@ -64,9 +58,9 @@ async function scrollSettingsToEnd(page: Page): Promise<void> {
 }
 
 async function bottomToasterOffset(page: Page): Promise<string> {
-	return bottomToaster(page).evaluate(
-		(toaster) => getComputedStyle(toaster).bottom,
-	);
+	return page
+		.locator('[data-sonner-toaster][data-y-position="bottom"]')
+		.evaluate((toaster) => getComputedStyle(toaster).bottom);
 }
 
 async function expectToastGap({
@@ -81,10 +75,14 @@ async function expectToastGap({
 	const page = obstruction.page();
 	await obstruction.waitFor({ timeout: 60_000 });
 	const toast = await showRestingToast({ page, edge, label: TOAST_LABEL });
-	expect(await toastGap({ toast, obstruction, edge })).toBeCloseTo(
-		expectedGap,
-		0,
-	);
+	const toastBox = await toast.boundingBox();
+	const obstructionBox = await obstruction.boundingBox();
+	if (!toastBox || !obstructionBox) throw new Error("Nothing to measure");
+	const gap =
+		edge === "top"
+			? toastBox.y - (obstructionBox.y + obstructionBox.height)
+			: obstructionBox.y - (toastBox.y + toastBox.height);
+	expect(gap).toBeCloseTo(expectedGap, 0);
 }
 
 async function useLowBlur(page: Page): Promise<void> {
@@ -223,13 +221,13 @@ test.describe("in Low blur, a toast keeps the bar gap", () => {
 	});
 });
 
-test("the save confirmation glides once to its resting place while the save bar flies away", async ({
+test("the save confirmation stays put while the save bar flies away", async ({
 	page,
 }) => {
 	await page.goto("/settings/profile");
 	await makeDirty(profileDisplayName(page));
 	await scrollSettingsToEnd(page);
-	const flight = page.evaluate(async (toasterSelector) => {
+	const scrolledMidFlight = page.evaluate(async () => {
 		const nextFrame = () =>
 			new Promise((framed) => requestAnimationFrame(framed));
 		const saveBar = await new Promise<EventTarget | null>((leaving) =>
@@ -243,33 +241,20 @@ test("the save confirmation glides once to its resting place while the save bar 
 		document
 			.querySelector('[data-slot="subpage-scroller"]')
 			?.dispatchEvent(new Event("scroll"));
-		const saveBarFlying = saveBar instanceof Element && saveBar.isConnected;
-		const bottoms: number[] = [];
-		const started = performance.now();
-		while (performance.now() - started < 600) {
-			await nextFrame();
-			const toaster = document.querySelector(toasterSelector);
-			if (toaster)
-				bottoms.push(
-					Number.parseFloat(getComputedStyle(toaster).bottom),
-				);
-		}
-		return { bottoms, saveBarFlying };
-	}, BOTTOM_TOASTER);
+		await nextFrame();
+		const toaster = document.querySelector(
+			'[data-sonner-toaster][data-y-position="bottom"]',
+		);
+		return {
+			bottom: toaster && getComputedStyle(toaster).bottom,
+			saveBarFlying: saveBar instanceof Element && saveBar.isConnected,
+		};
+	});
 	await saveButton(page).click();
 
-	const { bottoms, saveBarFlying } = await flight;
+	const { bottom, saveBarFlying } = await scrolledMidFlight;
 	expect(saveBarFlying).toBe(true);
 	await expect(saveButton(page)).toHaveCount(0);
-	const resting = Number.parseFloat(await bottomToasterOffset(page));
-	expect(bottoms.length).toBeGreaterThan(0);
-	expect(
-		Math.min(...bottoms),
-		"the toast never dips below its resting place",
-	).toBeGreaterThanOrEqual(resting - 0.5);
-	for (const [index, bottom] of bottoms.entries())
-		expect(bottom, "the toast only glides down").toBeLessThanOrEqual(
-			(bottoms[index - 1] ?? bottom) + 0.5,
-		);
+	expect(await bottomToasterOffset(page)).toBe(bottom);
 	await expectToastGap({ obstruction: meTab(page), edge: "bottom" });
 });

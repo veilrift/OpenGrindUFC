@@ -4,18 +4,26 @@
 		quoteLabel,
 	} from "$lib/model/messaging/message-preview";
 	import type { QuotedMessage } from "$lib/model/messaging/messages";
-	import { getMessageContext } from "./context";
+	import { getMessageContext, getMessageMetaContext } from "./context";
 
 	let { quoted }: { quoted: QuotedMessage } = $props();
 
 	const { isOut } = $derived(getMessageContext()());
+	const { clone } = $derived(getMessageMetaContext()());
 
 	const label = $derived(quoteLabel(previewFromMessage(quoted)));
 </script>
 
 <div
 	data-slot="message-quote"
-	class={["mb-1 flex max-w-100 items-end", { "flex-row-reverse": isOut }]}
+	class={[
+		"mb-1 flex max-w-100 items-end",
+		{
+			"flex-row-reverse": isOut,
+			"ms-3": !isOut && !clone,
+			"me-3": isOut && !clone,
+		},
+	]}
 >
 	<div
 		class={[

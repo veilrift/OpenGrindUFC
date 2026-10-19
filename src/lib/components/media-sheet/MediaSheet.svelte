@@ -3,26 +3,14 @@
 
 	import * as Drawer from "$lib/components/ui/drawer";
 	import { dismissOnBackGesture } from "$lib/platform/back-gesture-event.svelte";
-	import { anchorToastsAbove } from "./toast-anchor";
 
 	let {
 		open = $bindable(),
 		fullsize = true,
-		onCloseAutoFocus,
 		children,
-	}: {
-		open: boolean;
-		fullsize?: boolean;
-		onCloseAutoFocus?: (event: Event) => void;
-		children: Snippet;
-	} = $props();
+	}: { open: boolean; fullsize?: boolean; children: Snippet } = $props();
 
 	let pressedOutside = false;
-	let content = $state<HTMLElement | null>(null);
-
-	$effect(() => {
-		if (open && content) return anchorToastsAbove(content);
-	});
 
 	function isScroller(target: EventTarget | null): boolean {
 		return (
@@ -39,15 +27,13 @@
 	});
 </script>
 
-<Drawer.Root bind:open repositionInputs={false}>
+<Drawer.Root bind:open>
 	<Drawer.Content
-		bind:ref={content}
 		class={[
 			"mx-auto max-w-media-panel border-none bg-transparent p-0 shadow-none before:hidden",
 			{ "h-full": fullsize, "h-fit": !fullsize },
 		]}
 		handle={null}
-		{onCloseAutoFocus}
 		onpointerdown={(e) => (pressedOutside = isScroller(e.target))}
 		onclick={(e) => {
 			const outside = pressedOutside && isScroller(e.target);

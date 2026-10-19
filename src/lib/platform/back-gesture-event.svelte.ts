@@ -1,36 +1,10 @@
 import { createContext } from "svelte";
-import { SvelteMap } from "svelte/reactivity";
+import { SvelteSet } from "svelte/reactivity";
 
-export type BackGestureLayer = "stack" | "screen" | "overlay";
-
-type BackGestureHandler = () => boolean;
-
-const LAYERS_TOP_FIRST: readonly BackGestureLayer[] = [
-	"overlay",
-	"screen",
-	"stack",
-];
-
-export const backGestureEventHandlers = new SvelteMap<
-	BackGestureHandler,
-	BackGestureLayer
->();
-
-function backGestureHandlersTopFirst(): BackGestureHandler[] {
-	const newestFirst = [...backGestureEventHandlers].reverse();
-	return LAYERS_TOP_FIRST.flatMap((layer) =>
-		newestFirst
-			.filter(([, handlerLayer]) => handlerLayer === layer)
-			.map(([handler]) => handler),
-	);
-}
-
-export function topBackGestureHandler(): BackGestureHandler | undefined {
-	return backGestureHandlersTopFirst()[0];
-}
+export const backGestureEventHandlers = new SvelteSet<() => boolean>();
 
 export function runBackGestureHandlers(): boolean {
-	for (const handler of backGestureHandlersTopFirst()) {
+	for (const handler of [...backGestureEventHandlers].reverse()) {
 		if (handler() !== true) return true;
 	}
 	return false;
@@ -44,11 +18,9 @@ export { setScreenLeaving };
 export function dismissOnBackGesture({
 	active,
 	dismiss,
-	layer = "overlay",
 }: {
 	active: () => boolean;
 	dismiss: () => void;
-	layer?: BackGestureLayer;
 }): void {
 	const leaving = insideScreen() ? screenLeaving() : () => false;
 	$effect(() => {
@@ -57,7 +29,7 @@ export function dismissOnBackGesture({
 			dismiss();
 			return false;
 		};
-		backGestureEventHandlers.set(handler, layer);
+		backGestureEventHandlers.add(handler);
 		return () => {
 			backGestureEventHandlers.delete(handler);
 		};

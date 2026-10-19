@@ -89,7 +89,8 @@ function create() {
 		conversationId: CONVERSATION_ID,
 		ourProfileId: OUR_ID,
 		conversations: {
-			setActive: vi.fn(() => vi.fn()),
+			setActive: vi.fn(),
+			clearActive: vi.fn(),
 			getCachedConversation: vi.fn(() => undefined),
 			setCachedConversation: vi.fn(),
 			updatePreview: updatePreviewMock,

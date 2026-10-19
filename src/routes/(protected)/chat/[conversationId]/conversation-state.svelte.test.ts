@@ -90,7 +90,8 @@ const profile = {
 
 function conversationsStub() {
 	return {
-		setActive: vi.fn(() => vi.fn()),
+		setActive: vi.fn(),
+		clearActive: vi.fn(),
 		getCachedConversation: vi.fn(() => undefined),
 		setCachedConversation: vi.fn(),
 		updatePreview: vi.fn(),

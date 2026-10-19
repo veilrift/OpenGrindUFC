@@ -32,8 +32,6 @@
 		tone = "muted",
 		size = "sm",
 		loading,
-		fit = "cover",
-		skeleton = false,
 		pending = false,
 		failedSrc = $bindable(null),
 		onload,
@@ -48,8 +46,6 @@
 		tone?: "muted" | "photo";
 		size?: "xs" | "sm" | "md" | "lg" | "xl";
 		loading?: "eager" | "lazy";
-		fit?: "cover" | "contain";
-		skeleton?: boolean;
 		pending?: boolean;
 		failedSrc?: string | null;
 		onload?: (image: HTMLImageElement) => void;
@@ -199,8 +195,6 @@
 
 	let slotGranted = $state(false);
 	let shownSrc = $state<string | null>(null);
-	const loaded = $derived(shownSrc !== null && shownSrc === loadSrc);
-	const fetching = $derived(requested !== null && !loaded);
 	let imageElement = $state<HTMLImageElement>();
 	let releaseSlot = () => {};
 
@@ -236,18 +230,7 @@
 		{loading}
 		use:loadWhenVisible={deferred ? () => (armed = true) : undefined}
 		draggable="false"
-		class={[
-			{
-				"object-cover": fit === "cover",
-				"object-contain": fit === "contain",
-			},
-			{
-				"bg-muted": skeleton && !loaded,
-				"animate-pulse": skeleton && fetching,
-			},
-			className,
-			imgClass,
-		]}
+		class={["object-cover", className, imgClass]}
 		style:aspect-ratio={aspectRatio}
 		onerror={() => {
 			if (!slotGranted) return;

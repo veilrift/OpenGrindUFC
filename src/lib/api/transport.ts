@@ -2,7 +2,7 @@ import { decode, encode } from "@msgpack/msgpack";
 import { invoke } from "@tauri-apps/api/core";
 import z from "zod";
 
-import { ApiError, type ApiErrorKind } from "$lib/api/api-error";
+import { ApiError } from "$lib/api/api-error";
 import {
 	asAppError,
 	blockedKindOf,
@@ -17,26 +17,14 @@ import type { MediaFileDescriptor } from "$lib/platform/media-file";
 
 type RequestInfo = { method: string; path: string; body?: unknown };
 
-class ExternalRequestError extends ApiError {
-	override get retryable(): boolean {
-		if (this.kind === "Http" || this.kind === "Connect") return true;
-		const status = this.response?.status;
-		return status !== undefined && (status >= 500 || status === 408);
-	}
-}
-
-type ApiErrorClass = typeof ApiError;
-
 function buildRestResponse({
 	status,
 	responseBody,
 	requestInfo,
-	ErrorClass = ApiError,
 }: {
 	status: number;
 	responseBody: Uint8Array;
 	requestInfo: RequestInfo;
-	ErrorClass?: ApiErrorClass;
 }) {
 	let decoded: string | undefined;
 	const text = () => (decoded ??= new TextDecoder().decode(responseBody));
@@ -50,7 +38,7 @@ function buildRestResponse({
 			if (status >= 200 && status < 300) {
 				return;
 			}
-			throw new ErrorClass({
+			throw new ApiError({
 				message: `API request failed with status ${status}`,
 				request: requestInfo,
 				response: { status, body: text() },
@@ -64,7 +52,7 @@ function buildRestResponse({
 					path: requestInfo.path,
 					text: text(),
 				});
-				throw new ErrorClass({
+				throw new ApiError({
 					message: "Failed to parse API response",
 					request: requestInfo,
 					response: { status, body: text() },
@@ -84,7 +72,7 @@ function buildRestResponse({
 				});
 			} catch (error) {
 				if (error instanceof ApiError) throw error;
-				throw new ErrorClass({
+				throw new ApiError({
 					message: schemaMismatchMessage({
 						schema,
 						error,
@@ -102,11 +90,9 @@ function buildRestResponse({
 function decodeRestResponse({
 	encoded,
 	requestInfo,
-	ErrorClass,
 }: {
 	encoded: unknown;
 	requestInfo: RequestInfo;
-	ErrorClass?: ApiErrorClass;
 }) {
 	if (typeof encoded !== "string") {
 		throw new Error("Invalid response from backend");
@@ -115,29 +101,7 @@ function decodeRestResponse({
 	const { status, body: responseBody } = z
 		.object({ status: z.number(), body: z.instanceof(Uint8Array) })
 		.parse(decoded);
-	return buildRestResponse({ status, responseBody, requestInfo, ErrorClass });
-}
-
-type RestResponse = ReturnType<typeof buildRestResponse>;
-
-async function respondFromDemoOrSend({
-	requestInfo,
-	ErrorClass,
-	send,
-}: {
-	requestInfo: RequestInfo;
-	ErrorClass?: ApiErrorClass;
-	send: () => Promise<RestResponse>;
-}): Promise<RestResponse> {
-	if (!demoEnabled) return await send();
-	const { path, method } = requestInfo;
-	const { status, body } = demoRoute({
-		path,
-		method,
-		body: requestInfo.body,
-	});
-	const responseBody = new TextEncoder().encode(JSON.stringify(body ?? null));
-	return buildRestResponse({ status, responseBody, requestInfo, ErrorClass });
+	return buildRestResponse({ status, responseBody, requestInfo });
 }
 
 function restInvokeError({
@@ -246,34 +210,27 @@ export async function fetchRest(
 ) {
 	const method = options.method ?? "GET";
 	const requestInfo = { method, path, body: options.body };
-	return await respondFromDemoOrSend({
-		requestInfo,
-		send: () =>
-			sendRestRequest({
-				requestInfo,
-				abortController: options.abortController,
-			}),
-	});
-}
-
-async function sendRestRequest({
-	requestInfo,
-	abortController,
-}: {
-	requestInfo: RequestInfo;
-	abortController: AbortController | undefined;
-}) {
-	const { method, path, body } = requestInfo;
+	if (demoEnabled) {
+		const { status, body } = demoRoute({
+			path,
+			method,
+			body: options.body,
+		});
+		const responseBody = new TextEncoder().encode(
+			JSON.stringify(body ?? null),
+		);
+		return buildRestResponse({ status, responseBody, requestInfo });
+	}
 	const payload = encode({
 		method,
 		path,
-		body: body === undefined ? null : encode(body),
+		body: options.body === undefined ? null : encode(options.body),
 	});
 	const response = await invokeRest("request", {
 		args: { payload: toBase64(payload) },
 		requestInfo,
 	});
-	if (abortController?.signal.aborted) {
+	if (options.abortController?.signal.aborted) {
 		throw new ApiError({
 			message: "Request aborted",
 			request: requestInfo,
@@ -281,78 +238,6 @@ async function sendRestRequest({
 		});
 	}
 	return response;
-}
-
-const externalErrorMessages: Partial<Record<ApiErrorKind, string>> = {
-	Connect: "Couldn't connect. Check your internet connection and try again.",
-	NetworkBlocked:
-		"Something blocked the request before it reached the server",
-	RequestBlocked: "The server blocked the request",
-	RateLimited: "Too many requests, try again later",
-};
-
-function externalInvokeError({
-	error,
-	requestInfo,
-}: {
-	error: unknown;
-	requestInfo: RequestInfo;
-}): ApiError {
-	if (error instanceof ApiError) return error;
-	const appError = asAppError(error);
-	return new ExternalRequestError({
-		message:
-			(appError && externalErrorMessages[appError.kind]) ??
-			appError?.prettyMessage ??
-			(error instanceof Error ? error.message : String(error)),
-		request: requestInfo,
-		response: null,
-		kind: appError?.kind ?? null,
-		cause: error,
-	});
-}
-
-function hostQualifiedPath(url: URL): string {
-	return `${url.host}${url.pathname}${url.search}`;
-}
-
-async function sendExternalRequest({
-	url,
-	range,
-	requestInfo,
-}: {
-	url: URL;
-	range?: string;
-	requestInfo: RequestInfo;
-}) {
-	try {
-		const encoded = await invoke("fetch_external", {
-			url: url.href,
-			range,
-		});
-		return decodeRestResponse({
-			encoded,
-			requestInfo,
-			ErrorClass: ExternalRequestError,
-		});
-	} catch (error) {
-		throw externalInvokeError({ error, requestInfo });
-	}
-}
-
-export async function fetchExternal({
-	url,
-	range,
-}: {
-	url: URL;
-	range?: string;
-}) {
-	const requestInfo = { method: "GET", path: hostQualifiedPath(url) };
-	return await respondFromDemoOrSend({
-		requestInfo,
-		ErrorClass: ExternalRequestError,
-		send: () => sendExternalRequest({ url, range, requestInfo }),
-	});
 }
 
 export function parseApiResponse<TSchema extends z.ZodType>(options: {

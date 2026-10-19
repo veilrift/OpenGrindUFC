@@ -29,7 +29,7 @@ export function applyPhotoSwipeBackGesture(lightbox: PhotoSwipeLightbox): void {
 		return false;
 	};
 	lightbox.on("beforeOpen", () => {
-		backGestureEventHandlers.set(onBackGesture, "overlay");
+		backGestureEventHandlers.add(onBackGesture);
 	});
 	lightbox.on("close", () => {
 		backGestureEventHandlers.delete(onBackGesture);

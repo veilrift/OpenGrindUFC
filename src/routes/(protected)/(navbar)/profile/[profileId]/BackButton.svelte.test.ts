@@ -172,7 +172,7 @@ describe("BackButton", () => {
 	it("lets whatever the back gesture would dismiss take Escape first", () => {
 		const { back } = renderBackLink({ canGoBack: true });
 		const cancelReply = vi.fn(() => false);
-		backGestureEventHandlers.set(cancelReply, "screen");
+		backGestureEventHandlers.add(cancelReply);
 
 		pressEscape();
 		backGestureEventHandlers.delete(cancelReply);
@@ -184,7 +184,7 @@ describe("BackButton", () => {
 	it("goes back on Escape past a back handler with nothing to dismiss", () => {
 		const { back } = renderBackLink({ canGoBack: true });
 		const idle = vi.fn(() => true);
-		backGestureEventHandlers.set(idle, "overlay");
+		backGestureEventHandlers.add(idle);
 
 		pressEscape();
 		backGestureEventHandlers.delete(idle);

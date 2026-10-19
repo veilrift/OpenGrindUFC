@@ -180,15 +180,13 @@
 ></div>
 <FrostFilters />
 <IconContext values={{ "aria-hidden": true }}>
-	<div data-slot="toast-host" class="contents">
-		<Toaster
-			position="bottom-center"
-			offset={toastOffset}
-			mobileOffset={toastOffset}
-			toastOptions={{ class: "toast" }}
-			expand
-		/>
-	</div>
+	<Toaster
+		position="bottom-center"
+		offset={toastOffset}
+		mobileOffset={toastOffset}
+		toastOptions={{ class: "toast" }}
+		expand
+	/>
 	{@render children?.()}
 	<RequestBlockedAlert />
 	<SessionErrorAlert />
