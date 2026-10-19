@@ -4,7 +4,7 @@
 
 An unofficial iOS Client of [Open Grind](https://git.opengrind.org/open-grind/open-grind), for those who would like to try it out, created to make Open Grind usable on iPhone while waiting for an official iOS release from the original project.
 
-**Download**: [IPA](https://git.opengrind.org/veilrift/OpenGrindUFC/releases)
+**Download**: [IPA](h[ttps://git.opengrind.org/veilrift/OpenGrindUFC/releases](https://github.com/veilrift/OpenGrindUFC/releases/tag/main))
 
 ---
 
