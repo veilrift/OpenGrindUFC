@@ -147,16 +147,6 @@ These warnings did not prevent the application from building and launching.
 
 They should be reviewed separately, particularly the mutable static warnings.
 
-### Summary of Changes
-
-| Area          | Change                                              | Result                                |
-| ------------- | --------------------------------------------------- | ------------------------------------- | ---------- |
-| iOS lifecycle | Corrected `tao` scene configuration pointer handoff | Launch crash resolved in tested build |
-| Cargo         | Configured local `tao` patch                        | Patched code selected                 |
-| iOS manifest  | Added scene configuration                           | Included in tested IPA                | in package |
-| Push backend  | Added iOS fallback and platform selection           | iOS compilation supported             |
-| Updater code  | Gated desktop only taskbar functionality            | Platform compatibility improved       |
-
 ---
 
 ## Requirements
