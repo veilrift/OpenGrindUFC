@@ -10,7 +10,7 @@ An unofficial iOS Client of [Open Grind](https://git.opengrind.org/open-grind/op
 
 > **Disclaimer:** OpenGrindUFC is **not an official Open Grind release**, and it is not affiliated with or endorsed by the original developers, I do not own Open Grind or claim authorship of the original project. OpenGrindUFC is an unofficial iOS Client, intended to make Open Grind available on iOS temporarily, until an official version is released by the original developers. All original code, trademarks, artwork, and other materials remain subject to their respective owners and licenses.
 
-**Security:** While this build is not reproducable for iOS, it contanins the Original Source code with few patches without any critical modifications, feel free to clone this repository and inspect the code at any times. There won't be any modifications that do not belong to the Original Source code for security reasons.
+**Security:** This build is reproducable for iOS and comes signed, it contanins the Original Source code with few patches without any critical modifications, these patches are written in new files to maintain upstream fetch, feel free to clone this repository and inspect the code at any times. There won't be any modifications that do not belong to the Original Source code for security reasons.
 
 **Important Notice:** Please refrain from reporting bugs and issues to the official project, feel free to open any Issues you have found to this Project.
 
@@ -147,16 +147,6 @@ These warnings did not prevent the application from building and launching.
 
 They should be reviewed separately, particularly the mutable static warnings.
 
-### Summary of Changes
-
-| Area          | Change                                              | Result                                |
-| ------------- | --------------------------------------------------- | ------------------------------------- | ---------- |
-| iOS lifecycle | Corrected `tao` scene configuration pointer handoff | Launch crash resolved in tested build |
-| Cargo         | Configured local `tao` patch                        | Patched code selected                 |
-| iOS manifest  | Added scene configuration                           | Included in tested IPA                | in package |
-| Push backend  | Added iOS fallback and platform selection           | iOS compilation supported             |
-| Updater code  | Gated desktop only taskbar functionality            | Platform compatibility improved       |
-
 ---
 
 ## Requirements
@@ -192,11 +182,11 @@ The exact versions should match the project's pinned toolchain and dependency re
 
 Everything needed to reproduce an iOS build is committed:
 
-| Setting                | Value                      | Where it's pinned                                                             |
-| ---------------------- | -------------------------- | ----------------------------------------------------------------------------- | --- |
-| Apple development team | `APPLE_DEVELOPMENT_TEAM`   | your environment, see below (config holds a placeholder)                      |
-| Bundle identifier      | `com.opengrind.ufc`        | `src-tauri/tauri.conf.json` &rarr; `identifier` (and `gen/apple/project.yml`) |     |
-| iOS usage descriptions | location permission string | `src-tauri/Info.ios.plist`                                                    |
+| Setting | Value | Where it's pinned |
+|---|---|---|
+| Apple development team | `APPLE_DEVELOPMENT_TEAM` | Environment variable; the config contains a placeholder |
+| Bundle identifier | `com.opengrind.ufc` | `src-tauri/tauri.conf.json` → `identifier` and `gen/apple/project.yml` |
+| iOS usage descriptions | Location permission string | `src-tauri/Info.ios.plist` |
 
 ### 1. Obtain the source
 
@@ -238,7 +228,7 @@ The selected `tao` crate should resolve to the local `.patched/tao` directory. I
 ### 5. Build the iOS application
 
 Obtain your TeamID:
-**Keychain Access > login > my certificates, double click at Apple Development and replace XXXXXXXXXX with Organization Unit Value**a
+**Keychain Access > login > my certificates, double click at Apple Development and replace XXXXXXXXXX with Organization Unit Value**
 
 Export your TeamID to terminal:
 
